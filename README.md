@@ -11,7 +11,7 @@ set.
 Add to composer.json
 
 ```json
-"analyticsface/yii2-mailgun" : "~1.1"
+"analyticsface/yii2-mailgun" : "~1.2"
 ```
 
 to the require section of your application's `composer.json` file.
@@ -25,7 +25,6 @@ Usage
     'mailer' => [
         'class' => 'aface\mailgun\Mailer',
         'viewPath' => '@common/mail',
-        'emailValidKey' => 'emailValidKey-example',
         'key' => 'key-example',
         'domain' => 'mg.example.com',
     ],

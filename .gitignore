@@ -4,3 +4,5 @@
 /composer.lock
 /console/
 /yii
+/docker-compose.yml
+/docker

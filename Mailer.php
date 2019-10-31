@@ -5,7 +5,6 @@ namespace aface\mailgun;
 use Mailgun\Mailgun;
 use yii\base\InvalidConfigException;
 use yii\mail\BaseMailer;
-use Yii;
 
 /**
  * Mailer implements a mailer based on Mailgun.
@@ -26,38 +25,31 @@ class Mailer extends BaseMailer
      * @var string message default class name.
      */
     public $messageClass = 'aface\mailgun\Message';
-
     /**
      * @var string Mailgun API credentials.
      * @see https://app.mailgun.com/app/account/security
      */
     public $key;
-
-    /**
-     * @var string Mailgun API Email Validation Key.
-     * @see https://app.mailgun.com/app/account/security
-     */
-    public $emailValidKey;
-
-    /** @var string Mailgun API Email Validation URL */
-    public $emailValidUrl = 'https://api.mailgun.net/v3/address/validate';
-
     /**
      * @var string Mailgun domain.
      */
     public $domain;
-
+    /**
+     * @var string Mailgun endpoint.
+     */
+    public $endpoint = 'https://api.mailgun.net';
     /**
      * @var Mailgun Mailgun instance.
      */
     private $_mailgun;
 
     /**
-     * @return Mailgun Mailgun instance.
+     * @return Mailgun
+     * @throws InvalidConfigException
      */
     public function getMailgun()
     {
-        if (!is_object($this->_mailgun)) {
+        if (! ($this->_mailgun instanceof Mailgun)) {
             $this->_mailgun = $this->createMailgun();
         }
 
@@ -67,6 +59,8 @@ class Mailer extends BaseMailer
     /**
      * @param \yii\mail\MessageInterface $message
      * @return bool
+     * @throws InvalidConfigException
+     * @throws \Mailgun\Messages\Exceptions\MissingRequiredMIMEParameters
      */
     protected function sendMessage($message)
     {
@@ -75,8 +69,6 @@ class Mailer extends BaseMailer
             $message->getMessageBuilder()->getMessage(),
             $message->getMessageBuilder()->getFiles()
         );
-
-        Yii::info('Sending email', print_r($result, true));
 
         if ($result->http_response_code === 200) {
             return true;
@@ -92,39 +84,30 @@ class Mailer extends BaseMailer
      */
     protected function createMailgun()
     {
-        if (!$this->key) {
+        if (! $this->key) {
             throw new InvalidConfigException('Mailer::key must be set.');
         }
-        if (!$this->domain) {
+        if (! $this->domain) {
             throw new InvalidConfigException('Mailer::domain must be set.');
         }
-        return Mailgun::create($this->key);
+        return Mailgun::create($this->key, $this->endpoint);
     }
 
     /**
-     * Use curl to send the validation request to Mailgun
      * @param string $email
-     * @param boolean $returnBool
-     * @return boolean|\stdClass
-     * @throws \Exception
+     * @return bool
      */
-    public function emailValidate($email, $returnBool = true)
+    public function emailValidate($email)
     {
-        $mgClient = Mailgun::create($this->emailValidKey);
-        $result = $mgClient->get('address/validate', [
-            'address' => $email,
-            'mailbox_verification' => true
+        $mailgun = Mailgun::create($this->key, $this->endpoint);
+        $mailgun->setApiVersion('v4');
+        $response = $mailgun->get('address/validate', [
+            'address' => $email
         ]);
 
-        if ($returnBool !== true) {
-            return $result;
-        }
-
-        if ($result->http_response_code === 200) {
-            if ($result->http_response_body->mailbox_verification == 'unknown') {
-                return $result->http_response_body->is_valid;
-            }
-            return filter_var($result->http_response_body->mailbox_verification, FILTER_VALIDATE_BOOLEAN);
+        if ($response->http_response_code === 200) {
+            $responseBody = $response->http_response_body;
+            return property_exists($responseBody, 'reason') ? empty($responseBody->reason) : false;
         }
 
         return false;

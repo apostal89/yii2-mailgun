@@ -2,7 +2,6 @@
 
 namespace aface\mailgun;
 
-
 use yii\base\NotSupportedException;
 use yii\helpers\VarDumper;
 use yii\mail\BaseMessage;
