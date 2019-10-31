@@ -2,7 +2,10 @@
 
 namespace aface\mailgun;
 
-use Mailgun\Mailgun;
+use Mailgun\{
+    Mailgun,
+    HttpClientConfigurator
+};
 use yii\base\InvalidConfigException;
 use yii\mail\BaseMailer;
 
@@ -37,7 +40,7 @@ class Mailer extends BaseMailer
     /**
      * @var string Mailgun endpoint.
      */
-    public $endpoint = 'https://api.mailgun.net';
+    public $endpoint = 'api.mailgun.net';
     /**
      * @var Mailgun Mailgun instance.
      */
@@ -50,7 +53,17 @@ class Mailer extends BaseMailer
     public function getMailgun()
     {
         if (! ($this->_mailgun instanceof Mailgun)) {
-            $this->_mailgun = $this->createMailgun();
+            if (! $this->key) {
+                throw new InvalidConfigException('Mailer::key must be set.');
+            }
+            if (! $this->domain) {
+                throw new InvalidConfigException('Mailer::domain must be set.');
+            }
+
+            $configurator = (new HttpClientConfigurator())
+                ->setApiKey($this->key);
+            $httpClient = $configurator->createConfiguredClient();
+            $this->_mailgun = new Mailgun($configurator->getApiKey(), $httpClient, $this->endpoint);
         }
 
         return $this->_mailgun;
@@ -78,28 +91,12 @@ class Mailer extends BaseMailer
     }
 
     /**
-     * Creates Mailgun instance.
-     * @return Mailgun Mailgun instance.
-     * @throws InvalidConfigException if required params are not set.
-     */
-    protected function createMailgun()
-    {
-        if (! $this->key) {
-            throw new InvalidConfigException('Mailer::key must be set.');
-        }
-        if (! $this->domain) {
-            throw new InvalidConfigException('Mailer::domain must be set.');
-        }
-        return Mailgun::create($this->key, $this->endpoint);
-    }
-
-    /**
-     * @param string $email
+     * @param $email
      * @return bool
      */
     public function emailValidate($email)
     {
-        $mailgun = Mailgun::create($this->key, $this->endpoint);
+        $mailgun = Mailgun::create($this->key);
         $mailgun->setApiVersion('v4');
         $response = $mailgun->get('address/validate', [
             'address' => $email

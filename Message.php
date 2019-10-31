@@ -17,14 +17,13 @@ class Message extends BaseMessage
      */
     private $_messageBuilder;
 
-
     /**
      * @return MessageBuilder Mailgun message builder.
      */
     public function getMessageBuilder()
     {
-        if (!is_object($this->_messageBuilder)) {
-            $this->_messageBuilder = $this->createMessageBuilder();
+        if (! ($this->_messageBuilder instanceof MessageBuilder)) {
+            $this->_messageBuilder = new MessageBuilder;
         }
 
         return $this->_messageBuilder;
@@ -225,14 +224,5 @@ class Message extends BaseMessage
     public function toString()
     {
         return VarDumper::dumpAsString($this->getMessageBuilder()->getMessage());
-    }
-
-    /**
-     * Creates the Mailgun message builder.
-     * @return MessageBuilder message builder.
-     */
-    protected function createMessageBuilder()
-    {
-        return new MessageBuilder;
     }
 }
