@@ -225,4 +225,16 @@ class Message extends BaseMessage
     {
         return VarDumper::dumpAsString($this->getMessageBuilder()->getMessage());
     }
+
+    /**
+     * @param $tag
+     * @return $this
+     * @throws \Mailgun\Messages\Exceptions\TooManyParameters
+     */
+    public function addTag($tag)
+    {
+        $this->getMessageBuilder()->addTag($tag);
+
+        return $this;
+    }
 }
